@@ -1,0 +1,44 @@
+/* Custom styles to complement Tailwind */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.course-input:first-child .remove-course {
+    display: none;
+}
+
+#print-section {
+    background-color: white;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #print-section, #print-section * {
+        visibility: visible;
+    }
+    #print-section {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+
+/* Loading spinner */
+.spinner {
+    animation: spin 1s linear infinite;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #6366f1;
+    width: 24px;
+    height: 24px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
