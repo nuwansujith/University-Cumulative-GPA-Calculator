@@ -1,51 +1,141 @@
-// PDF Generation using jsPDF
 const { jsPDF } = window.jspdf;
 
-document.getElementById('generate-pdf').addEventListener('click', function() {
-    const currentCredits = document.getElementById('current-credits').textContent;
-    const currentGPA = document.getElementById('current-gpa').textContent;
-    const totalCredits = document.getElementById('total-credits').textContent;
-    const cumulativeGPA = document.getElementById('cumulative-gpa').textContent;
+document.getElementById('generate-pdf').addEventListener('click', async function() {
+    // Show loading state
+    const pdfBtn = this;
+    pdfBtn.innerHTML = '<div class="spinner"></div> Generating...';
+    pdfBtn.disabled = true;
     
-    const doc = new jsPDF();
-    
-    // Add logo/title
-    doc.setFontSize(20);
-    doc.setTextColor(40, 53, 147);
-    doc.text('University GPA Report', 105, 20, { align: 'center' });
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
-    
-    // Add current semester results
-    doc.setFontSize(16);
-    doc.text('Current Semester Results', 14, 45);
-    doc.setFontSize(12);
-    doc.text(`Total Credits: ${currentCredits}`, 14, 55);
-    doc.text(`GPA: ${currentGPA}`, 14, 65);
-    
-    // Add cumulative results
-    doc.setFontSize(16);
-    doc.text('Cumulative Results', 14, 85);
-    doc.setFontSize(12);
-    doc.text(`Total Credits: ${totalCredits}`, 14, 95);
-    doc.text(`Cumulative GPA: ${cumulativeGPA}`, 14, 105);
-    
-    // Add course list
-    doc.setFontSize(16);
-    doc.text('Course Breakdown', 14, 125);
-    doc.setFontSize(10);
-    
-    let yPosition = 135;
-    document.querySelectorAll('.course-input').forEach((course, index) => {
-        const name = course.querySelector('input[type="text"]').value || `Course ${index + 1}`;
-        const credits = course.querySelector('input[type="number"]').value || '0';
-        const grade = course.querySelector('select').selectedOptions[0]?.text || 'N/A';
+    try {
+        // Get data
+        const studentName = document.getElementById('student-name')?.value || 'Student';
+        const studentId = document.getElementById('student-id')?.value || '';
+        const currentCredits = document.getElementById('current-credits').textContent;
+        const currentGPA = document.getElementById('current-gpa').textContent;
+        const totalCredits = document.getElementById('total-credits').textContent;
+        const cumulativeGPA = document.getElementById('cumulative-gpa').textContent;
         
-        doc.text(`${name}: ${credits} credits - ${grade}`, 14, yPosition);
-        yPosition += 7;
-    });
-    
-    // Save the PDF
-    doc.save('GPA_Report.pdf');
+        // Create PDF with better layout
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        // Add university header
+        doc.setFillColor(55, 65, 81);
+        doc.rect(0, 0, 210, 30, 'F');
+        doc.setFontSize(20);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ACADEMIC TRANSCRIPT', 105, 20, { align: 'center' });
+        
+        // Student information section
+        doc.setFillColor(240, 240, 240);
+        doc.rect(10, 40, 190, 20, 'F');
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        
+        doc.text(`Student Name: ${studentName}`, 15, 50);
+        doc.text(`Student ID: ${studentId}`, 15, 55);
+        doc.text(`Date Generated: ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        })}`, 150, 50);
+        
+        // GPA Summary
+        doc.setFontSize(14);
+        doc.setTextColor(75, 85, 99);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ACADEMIC SUMMARY', 15, 75);
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.line(15, 77, 60, 77);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        
+        // Summary table
+        doc.autoTable({
+            startY: 80,
+            head: [['Type', 'Credits', 'GPA']],
+            body: [
+                ['Current Semester', currentCredits, currentGPA],
+                ['Cumulative', totalCredits, cumulativeGPA]
+            ],
+            headStyles: {
+                fillColor: [55, 65, 81],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+                fillColor: [240, 240, 240]
+            },
+            margin: { top: 5 }
+        });
+        
+        // Course Details
+        doc.setFontSize(14);
+        doc.setTextColor(75, 85, 99);
+        doc.setFont('helvetica', 'bold');
+        doc.text('COURSE DETAILS', 15, doc.autoTable.previous.finalY + 15);
+        doc.line(15, doc.autoTable.previous.finalY + 17, 60, doc.autoTable.previous.finalY + 17);
+        
+        // Prepare course data
+        const courses = Array.from(document.querySelectorAll('.course-input')).map((course, index) => {
+            return {
+                code: `CRS${index + 1000}`,
+                name: course.querySelector('input[type="text"]').value || `Course ${index + 1}`,
+                credits: course.querySelector('input[type="number"]').value || '0',
+                grade: course.querySelector('select').selectedOptions[0]?.text || 'N/A',
+                points: course.querySelector('select').value || '0'
+            };
+        });
+        
+        // Course table
+        doc.autoTable({
+            startY: doc.autoTable.previous.finalY + 25,
+            head: [['Code', 'Course Name', 'Credits', 'Grade', 'Grade Points']],
+            body: courses.map(course => [course.code, course.name, course.credits, course.grade, course.points]),
+            headStyles: {
+                fillColor: [55, 65, 81],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold'
+            },
+            columnStyles: {
+                0: { cellWidth: 20 },
+                1: { cellWidth: 70 },
+                2: { cellWidth: 20 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 30 }
+            },
+            alternateRowStyles: {
+                fillColor: [240, 240, 240]
+            },
+            margin: { top: 5 }
+        });
+        
+        // Footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for(let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Page ${i} of ${pageCount}`, 105, 287, { align: 'center' });
+            doc.text('Generated by University GPA Calculator', 105, 290, { align: 'center' });
+        }
+        
+        // Save PDF
+        doc.save(`${studentName.replace(' ', '_')}_GPA_Transcript.pdf`);
+        
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        alert('Error generating PDF. Please try again.');
+    } finally {
+        pdfBtn.innerHTML = 'Generate PDF Report';
+        pdfBtn.disabled = false;
+    }
 });
